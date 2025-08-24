@@ -1,0 +1,16 @@
+name: TemporaryStore
+version: '1.0-SNAPSHOT'
+main: com.github.saintedlittle.MainActivity
+api-version: '1.21'
+authors: [ saintedlittle ]
+website: https://saintedlittle.jp
+commands:
+  shopreload:
+    description: Reload shop config and messages
+    usage: /shopreload
+    permission: shop.reload
+permissions:
+  shop.use:
+    default: true
+  shop.reload:
+    default: op

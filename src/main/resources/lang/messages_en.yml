@@ -1,0 +1,7 @@
+no-permission: "&cYou don't have permission."
+reloaded-ok: "&aConfig & messages reloaded."
+reloaded-fail: "&cReload failed. See console."
+menu-title: "%title%"          # если где-то надо будет через плейсхолдер показать
+menu-description: "%desc%"
+player-only: "&cThis command can be used only by players."
+

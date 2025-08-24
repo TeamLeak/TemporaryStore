@@ -1,0 +1,6 @@
+no-permission: "&cНедостаточно прав."
+reloaded-ok: "&aКонфиг и сообщения перезагружены."
+reloaded-fail: "&cОшибка перезагрузки. Смотри консоль."
+menu-title: "%title%"
+menu-description: "%desc%"
+player-only: "&cЭту команду можно выполнять только игроку."
