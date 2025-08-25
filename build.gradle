@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = 'com.github.saintedlittle'
@@ -16,6 +17,12 @@ repositories {
         url = "https://nexus.phoenixdevt.fr/repository/maven-public/"
         name = "phoenix"
     }
+
+    maven {
+        url "https://maven.devs.beer/"
+        name "matteodev"
+    }
+
 }
 
 dependencies {
@@ -26,6 +33,8 @@ dependencies {
         transitive = false
     }
     compileOnly "net.Indyuce:MMOItems-API:6.9.5-SNAPSHOT"
+    compileOnly "dev.lone:api-itemsadder:4.0.10"
+
 }
 
 tasks {

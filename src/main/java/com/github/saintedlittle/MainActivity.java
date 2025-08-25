@@ -5,6 +5,8 @@ import com.github.saintedlittle.command.CommandManager;
 import com.github.saintedlittle.command.annotations.CommandSpec;
 import com.github.saintedlittle.config.ConfigManager;
 import com.github.saintedlittle.i18n.Messages;
+import com.github.saintedlittle.listener.ShopMenuListener;
+import com.github.saintedlittle.shop.ShopPurchaseService;
 import io.github.classgraph.ClassGraph;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -27,6 +29,7 @@ public final class MainActivity extends JavaPlugin {
 
         try (var scan = new ClassGraph()
                 .enableClassInfo()
+                .enableAnnotationInfo()              // <-- required for getClassesWithAnnotation(...)
                 .acceptPackages("com.github.saintedlittle.command.impl")
                 .scan()) {
 
@@ -41,6 +44,9 @@ public final class MainActivity extends JavaPlugin {
         } catch (Throwable t) {
             getLogger().log(Level.SEVERE, "Failed to auto-register commands", t);
         }
+
+        ShopPurchaseService purchaseService = new ShopPurchaseService(this);
+        getServer().getPluginManager().registerEvents(new ShopMenuListener(this, purchaseService), this);
 
         getLogger().info("ShopPlugin enabled.");
     }

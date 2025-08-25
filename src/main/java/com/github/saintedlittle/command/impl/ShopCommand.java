@@ -4,58 +4,115 @@ import com.github.saintedlittle.MainActivity;
 import com.github.saintedlittle.command.AnnotatedCommand;
 import com.github.saintedlittle.command.CommandContext;
 import com.github.saintedlittle.command.annotations.CommandSpec;
-import com.github.saintedlittle.command.annotations.SubcommandSpec;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import com.github.saintedlittle.model.ShopItem;
+import dev.lone.itemsadder.api.CustomStack;
+import dev.lone.itemsadder.api.FontImages.FontImageWrapper;
+import dev.lone.itemsadder.api.FontImages.TexturedInventoryWrapper;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+
+import java.util.List;
 
 @CommandSpec(
-        name = "shop",
-        description = "Main shop command",
-        usage = "/shop <open|reload|about>",
+        name = "abyssshop",
+        description = "Open the Abyss shop menu",
+        usage = "/abyssshop",
         permission = "shop.use",
-        aliases = {"market"}
+        aliases = {"abyss"}
 )
 public final class ShopCommand extends AnnotatedCommand {
 
     private static final LegacyComponentSerializer SEC = LegacyComponentSerializer.legacySection();
 
+    private final NamespacedKey KEY_ACTION;
+    private final NamespacedKey KEY_PRICE;
+
     public ShopCommand(MainActivity plugin) {
         super(plugin);
+        this.KEY_ACTION = new NamespacedKey(plugin, "action");
+        this.KEY_PRICE = new NamespacedKey(plugin, "shop_price");
     }
 
     @Override
     protected boolean rootExecute(CommandContext ctx) {
-        ctx.sender().sendMessage(Component.text("Usage: /shop <open|reload|about>", NamedTextColor.YELLOW));
-        return true;
-    }
+        if (!(ctx.sender() instanceof Player player)) {
+            String msg = plugin.messages().get("player-only");
+            ctx.sender().sendMessage(SEC.deserialize(msg));
+            return true;
+        }
 
-    @SubcommandSpec(name = "about", description = "Show shop info")
-    public boolean about(CommandContext ctx) {
         var cfg = plugin.configManager();
+        TexturedInventoryWrapper tiw = new TexturedInventoryWrapper(
+                null,
+                54,
+                "Abyss",
+                50,
+                -48,
+                new FontImageWrapper("abyss:shopmenu_main")
+        );
 
-        String title = plugin.messages().get("menu-title",
-                java.util.Map.of("title", cfg.menuTitle()));
-        String desc  = plugin.messages().get("menu-description",
-                java.util.Map.of("desc", cfg.menuDescription()));
+        Inventory inv = tiw.getInternal();
 
-        ctx.sender().sendMessage(SEC.deserialize(title));
-        ctx.sender().sendMessage(SEC.deserialize(desc));
-        ctx.sender().sendMessage(Component.text("Items loaded: " + cfg.items().size(), NamedTextColor.GRAY));
+        // 45-47: закрытие
+        setRange(inv, 45, 47, makeTransparentButton("close"));
+
+        // 51-53: открыть подменю
+        setRange(inv, 51, 53, makeTransparentButton("submenu"));
+
+        loadShopGrid(inv, cfg.items());
+
+        tiw.showInventory(player);
         return true;
     }
 
-    @SubcommandSpec(name = "reload", permission = "shop.reload", description = "Reload config & messages")
-    public boolean reload(CommandContext ctx) {
-        boolean ok = plugin.hotReload();
-        String msg = plugin.messages().get(ok ? "reloaded-ok" : "reloaded-fail");
-        ctx.sender().sendMessage(SEC.deserialize(msg));
-        return true;
+    /** Прозрачная «кнопка» (GLASS_PANE) с PDC-меткой действия */
+    private ItemStack makeTransparentButton(String action) {
+        CustomStack cs = CustomStack.getInstance("blank:menu_blank");
+        ItemStack it;
+        if (cs != null) {
+            it = cs.getItemStack().clone();
+        } else {
+            // fallback, если предмет не найден в IA
+            it = new ItemStack(Material.BARRIER);
+            ItemMeta m = it.getItemMeta();
+            m.setDisplayName("§cMissing IA item: blank:menu_blank");
+            it.setItemMeta(m);
+            return it;
+        }
+
+        ItemMeta meta = it.getItemMeta();
+        // никаких displayName — берём как есть из IA
+        // навешиваем только action-тег
+        meta.getPersistentDataContainer().set(KEY_ACTION, PersistentDataType.STRING, action);
+        it.setItemMeta(meta);
+
+        return it;
     }
 
-    @SubcommandSpec(name = "open", description = "Open shop GUI")
-    public boolean open(CommandContext ctx) {
-        ctx.sender().sendMessage(Component.text("TODO: open shop GUI here.", NamedTextColor.GREEN));
-        return true;
+
+    private static void setRange(Inventory inv, int from, int to, ItemStack item) {
+        for (int i = from; i <= to; i++) inv.setItem(i, item.clone());
+    }
+
+    private void loadShopGrid(Inventory inv, List<ShopItem> shopItems) {
+        int[] slots = {
+                10,11,12,13,14,15,16,
+                19,20,21,22,23,24,25,
+                28,29,30,31,32,33,34
+        };
+
+        int i = 0;
+        for (int slot : slots) {
+            if (i >= shopItems.size()) break;
+            ShopItem si = shopItems.get(i++);
+            ItemStack st = si.toItemStack(KEY_PRICE);
+            if (st != null) inv.setItem(slot, st);
+        }
     }
 }
