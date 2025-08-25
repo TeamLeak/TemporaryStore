@@ -9,9 +9,11 @@ shop:
     - type: SWORD
       id: CUTLASS
       price: 500
-    - type: AXE
-      id: BATTLE_AXE
-      price: 750
-    - type: BOW
-      id: LONGBOW
-      price: 1200
+second_page:
+  menu:
+    title: "&aPirate Shop"
+    description: "&7Buy lethal beauties & treasures"
+  items:
+    - type: SWORD
+      id: CUTLASS
+      price: 500
