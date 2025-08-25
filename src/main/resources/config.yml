@@ -11,9 +11,6 @@ shop:
       price: 500
 
 second_page:
-  menu:
-    title: "&aPirate Shop"
-    description: "&7Buy lethal beauties & treasures"
   items:
     - type: SWORD
       id: CUTLASS

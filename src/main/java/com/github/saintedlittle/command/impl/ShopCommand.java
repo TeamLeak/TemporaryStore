@@ -8,8 +8,8 @@ import com.github.saintedlittle.model.ShopItem;
 import dev.lone.itemsadder.api.CustomStack;
 import dev.lone.itemsadder.api.FontImages.FontImageWrapper;
 import dev.lone.itemsadder.api.FontImages.TexturedInventoryWrapper;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -29,7 +29,6 @@ import java.util.List;
 )
 public final class ShopCommand extends AnnotatedCommand {
 
-    private static final LegacyComponentSerializer AMP = LegacyComponentSerializer.legacyAmpersand();
     private static final LegacyComponentSerializer SEC = LegacyComponentSerializer.legacySection();
 
     private final NamespacedKey KEY_ACTION;
@@ -50,14 +49,12 @@ public final class ShopCommand extends AnnotatedCommand {
         }
 
         var cfg = plugin.configManager();
-        String rawTitle = cfg.menuTitle();
-        Component title = AMP.deserialize(rawTitle);
 
         TexturedInventoryWrapper tiw = new TexturedInventoryWrapper(
                 null,
                 54,
-                "Abyss",
-                50,
+                "",
+                70,
                 -48,
                 new FontImageWrapper("abyss:shopmenu_main")
         );

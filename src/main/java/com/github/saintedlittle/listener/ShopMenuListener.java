@@ -1,10 +1,9 @@
 package com.github.saintedlittle.listener;
 
 import com.github.saintedlittle.MainActivity;
+import com.github.saintedlittle.menu.ShopSubmenu;
 import dev.lone.itemsadder.api.CustomStack;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -17,7 +16,6 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,12 +24,15 @@ public final class ShopMenuListener implements Listener {
     private final NamespacedKey KEY_PRICE;
     private final MainActivity plugin;
 
+    private final ShopSubmenu submenu; // <-- вынесенное подменю
+
     private static final String CURRENCY_IA_ID = "abyss:eye_of_poo";
 
     public ShopMenuListener(MainActivity plugin) {
         this.plugin = plugin;
         this.KEY_ACTION = new NamespacedKey(plugin, "action");
         this.KEY_PRICE = new NamespacedKey(plugin, "shop_price");
+        this.submenu = new ShopSubmenu(plugin); // инициализация подменю
     }
 
     @EventHandler
@@ -54,7 +55,7 @@ public final class ShopMenuListener implements Listener {
 
         switch (action) {
             case "close" -> p.closeInventory();
-            case "submenu" -> openSubmenu(p);
+            case "submenu" -> submenu.open(p); // <-- вызов вынесенного метода
             case "buy" -> buyItem(pdc, p, item);
             default -> { /* no-op */ }
         }
@@ -73,13 +74,11 @@ public final class ShopMenuListener implements Listener {
             return;
         }
 
-        // Проверяем наличие валюты
         if (!hasCurrency(p, price)) {
             p.sendMessage(ChatColor.RED + "У вас недостаточно глаз Пу! Требуется: " + price);
             return;
         }
 
-        // Создаем награду (копия без метаданных магазина)
         ItemStack reward = item.clone();
         ItemMeta rMeta = reward.getItemMeta();
         if (rMeta != null) {
@@ -87,29 +86,24 @@ public final class ShopMenuListener implements Listener {
             rPdc.remove(KEY_PRICE);
             rPdc.remove(KEY_ACTION);
 
-            // Чистим строку с "Цена:"
             if (rMeta.hasLore()) {
                 List<String> lore = new ArrayList<>(Objects.requireNonNull(rMeta.getLore()));
                 lore.removeIf(line -> line != null && ChatColor.stripColor(line).toLowerCase().startsWith("цена:"));
                 rMeta.setLore(lore);
             }
-
             reward.setItemMeta(rMeta);
         }
 
-        // Забираем валюту
         if (!takeCurrency(p, price)) {
             p.sendMessage(ChatColor.RED + "Ошибка при списании валюты!");
             return;
         }
 
-        // Выдаем награду
         var leftover = p.getInventory().addItem(reward);
         if (!leftover.isEmpty()) {
             leftover.values().forEach(st -> p.getWorld().dropItemNaturally(p.getLocation(), st));
         }
 
-        // Сообщение об успешной покупке
         String name = (reward.getItemMeta() != null && reward.getItemMeta().hasDisplayName())
                 ? reward.getItemMeta().getDisplayName()
                 : ChatColor.YELLOW + "товар";
@@ -117,21 +111,14 @@ public final class ShopMenuListener implements Listener {
                 + ChatColor.GRAY + " за " + ChatColor.GOLD + price + ChatColor.GRAY + " " + ChatColor.YELLOW + "глаз Пу");
     }
 
-    /**
-     * Проверяет, есть ли у игрока достаточно валюты
-     */
     private boolean hasCurrency(Player player, int amount) {
         return countCurrency(player) >= amount;
     }
 
-    /**
-     * Подсчитывает количество валюты у игрока
-     */
     private int countCurrency(Player player) {
         int total = 0;
         Inventory inv = player.getInventory();
 
-        // Получаем эталонный ItemStack валюты
         ItemStack currencyStack = getCurrencyItemStack();
         if (currencyStack == null) {
             plugin.getLogger().warning("Не удалось получить ItemStack валюты: " + CURRENCY_IA_ID);
@@ -143,13 +130,9 @@ public final class ShopMenuListener implements Listener {
                 total += stack.getAmount();
             }
         }
-
         return total;
     }
 
-    /**
-     * Списывает указанное количество валюты у игрока
-     */
     private boolean takeCurrency(Player player, int amount) {
         if (!hasCurrency(player, amount)) return false;
 
@@ -165,54 +148,33 @@ public final class ShopMenuListener implements Listener {
                 int stackAmount = stack.getAmount();
 
                 if (stackAmount <= remaining) {
-                    // Забираем весь стак
                     remaining -= stackAmount;
                     inv.setItem(i, null);
                 } else {
-                    // Забираем часть стака
                     stack.setAmount(stackAmount - remaining);
                     remaining = 0;
                 }
             }
         }
-
         return remaining == 0;
     }
 
-    /**
-     * Получает ItemStack валюты
-     */
     private ItemStack getCurrencyItemStack() {
         CustomStack cs = CustomStack.getInstance(CURRENCY_IA_ID);
-        if (cs != null) {
-            return cs.getItemStack();
-        }
-
-        return null;
+        return cs != null ? cs.getItemStack() : null;
     }
 
-    /**
-     * Проверяет, является ли предмет валютой
-     */
     private boolean isCurrencyItem(ItemStack item, ItemStack currencyTemplate) {
         if (item == null || currencyTemplate == null) return false;
 
-        // Для ItemsAdder предметов
-        CustomStack itemCS = CustomStack.byItemStack(item);
-        CustomStack templateCS = CustomStack.byItemStack(currencyTemplate);
+        var itemCS = CustomStack.byItemStack(item);
+        var templateCS = CustomStack.byItemStack(currencyTemplate);
 
         if (itemCS != null && templateCS != null) {
             return itemCS.getNamespacedID().equals(templateCS.getNamespacedID());
         }
 
-        // Для обычных предметов
         return item.getType() == currencyTemplate.getType() &&
                 Objects.equals(item.getItemMeta(), currencyTemplate.getItemMeta());
-    }
-
-    private void openSubmenu(Player p) {
-        // Демо-подменю
-        Inventory sub = Bukkit.createInventory(p, 27, ChatColor.DARK_PURPLE + "Abyss | Submenu");
-        p.openInventory(sub);
     }
 }
