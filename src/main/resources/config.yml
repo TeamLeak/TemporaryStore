@@ -9,6 +9,7 @@ shop:
     - type: SWORD
       id: CUTLASS
       price: 500
+
 second_page:
   menu:
     title: "&aPirate Shop"

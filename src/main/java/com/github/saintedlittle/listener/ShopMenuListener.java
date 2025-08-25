@@ -26,10 +26,7 @@ public final class ShopMenuListener implements Listener {
     private final NamespacedKey KEY_PRICE;
     private final MainActivity plugin;
 
-    // Здесь укажи ID валюты из ItemsAdder (или Material если обычный предмет)
-    private static final String CURRENCY_IA_ID = "abyss:eye_of_poo"; // Замени на свой ID
-    // Если это обычный предмет Minecraft, используй Material вместо IA
-    // private static final Material CURRENCY_MATERIAL = Material.DIAMOND;
+    private static final String CURRENCY_IA_ID = "abyss:eye_of_poo";
 
     public ShopMenuListener(MainActivity plugin) {
         this.plugin = plugin;
@@ -186,14 +183,10 @@ public final class ShopMenuListener implements Listener {
      * Получает ItemStack валюты
      */
     private ItemStack getCurrencyItemStack() {
-        // Если используешь ItemsAdder
         CustomStack cs = CustomStack.getInstance(CURRENCY_IA_ID);
         if (cs != null) {
             return cs.getItemStack();
         }
-
-        // Если используешь обычный Material (раскомментируй и измени)
-        // return new ItemStack(CURRENCY_MATERIAL);
 
         return null;
     }
