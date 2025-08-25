@@ -8,15 +8,19 @@ import com.github.saintedlittle.model.ShopItem;
 import dev.lone.itemsadder.api.CustomStack;
 import dev.lone.itemsadder.api.FontImages.FontImageWrapper;
 import dev.lone.itemsadder.api.FontImages.TexturedInventoryWrapper;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @CommandSpec(
@@ -28,6 +32,7 @@ import java.util.List;
 )
 public final class ShopCommand extends AnnotatedCommand {
 
+    private static final LegacyComponentSerializer AMP = LegacyComponentSerializer.legacyAmpersand();
     private static final LegacyComponentSerializer SEC = LegacyComponentSerializer.legacySection();
 
     private final NamespacedKey KEY_ACTION;
@@ -48,6 +53,9 @@ public final class ShopCommand extends AnnotatedCommand {
         }
 
         var cfg = plugin.configManager();
+        String rawTitle = cfg.menuTitle();
+        Component title = AMP.deserialize(rawTitle);
+
         TexturedInventoryWrapper tiw = new TexturedInventoryWrapper(
                 null,
                 54,
@@ -81,23 +89,30 @@ public final class ShopCommand extends AnnotatedCommand {
             // fallback, если предмет не найден в IA
             it = new ItemStack(Material.BARRIER);
             ItemMeta m = it.getItemMeta();
-            m.setDisplayName("§cMissing IA item: blank:menu_blank");
-            it.setItemMeta(m);
+            if (m != null) {
+                m.setDisplayName("§cMissing IA item: blank:menu_blank");
+                it.setItemMeta(m);
+            }
             return it;
         }
 
         ItemMeta meta = it.getItemMeta();
-        // никаких displayName — берём как есть из IA
-        // навешиваем только action-тег
-        meta.getPersistentDataContainer().set(KEY_ACTION, PersistentDataType.STRING, action);
-        it.setItemMeta(meta);
+        if (meta != null) {
+            // никаких displayName — берём как есть из IA
+            // навешиваем только action-тег
+            meta.getPersistentDataContainer().set(KEY_ACTION, PersistentDataType.STRING, action);
+            it.setItemMeta(meta);
+        }
 
         return it;
     }
 
-
     private static void setRange(Inventory inv, int from, int to, ItemStack item) {
-        for (int i = from; i <= to; i++) inv.setItem(i, item.clone());
+        for (int i = from; i <= to; i++) {
+            if (item != null) {
+                inv.setItem(i, item.clone());
+            }
+        }
     }
 
     private void loadShopGrid(Inventory inv, List<ShopItem> shopItems) {
@@ -112,7 +127,19 @@ public final class ShopCommand extends AnnotatedCommand {
             if (i >= shopItems.size()) break;
             ShopItem si = shopItems.get(i++);
             ItemStack st = si.toItemStack(KEY_PRICE);
-            if (st != null) inv.setItem(slot, st);
+
+            // Проверяем на null перед использованием
+            if (st == null) {
+                plugin.getLogger().warning("Не удалось создать ItemStack для " + si);
+                continue;
+            }
+
+            ItemMeta meta = st.getItemMeta();
+            if (meta != null) {
+                meta.getPersistentDataContainer().set(KEY_ACTION, PersistentDataType.STRING, "buy");
+                st.setItemMeta(meta);
+                inv.setItem(slot, st);
+            }
         }
     }
 }

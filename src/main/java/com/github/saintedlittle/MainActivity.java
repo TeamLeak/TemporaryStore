@@ -6,7 +6,6 @@ import com.github.saintedlittle.command.annotations.CommandSpec;
 import com.github.saintedlittle.config.ConfigManager;
 import com.github.saintedlittle.i18n.Messages;
 import com.github.saintedlittle.listener.ShopMenuListener;
-import com.github.saintedlittle.shop.ShopPurchaseService;
 import io.github.classgraph.ClassGraph;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -45,8 +44,7 @@ public final class MainActivity extends JavaPlugin {
             getLogger().log(Level.SEVERE, "Failed to auto-register commands", t);
         }
 
-        ShopPurchaseService purchaseService = new ShopPurchaseService(this);
-        getServer().getPluginManager().registerEvents(new ShopMenuListener(this, purchaseService), this);
+        getServer().getPluginManager().registerEvents(new ShopMenuListener(this), this);
 
         getLogger().info("ShopPlugin enabled.");
     }
